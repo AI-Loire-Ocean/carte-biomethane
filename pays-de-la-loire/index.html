@@ -57,7 +57,7 @@ button, input { font: inherit; color: inherit; }
 .gerer:hover { background: var(--bleu-fonce); border-color: var(--bleu-fonce); }
 .tiroir-ouvert .boutons-page { display: none; }
 .en-lecture #btn-histoire { background: var(--jaune); border-color: var(--jaune); color: var(--titre); }
-.boutons-page .play { width: 44px; padding: 0; font-size: 16px; }
+.boutons-page .play { width: 44px; height: 44px; padding: 0; font-size: 16px; }
 .final-anim { animation: fondu .7s ease both; }
 @keyframes fondu { from { opacity: 0; } to { opacity: 1; } }
 .final-titre { font-size: 4.8px; font-weight: 700; fill: var(--bleu); }
@@ -283,10 +283,60 @@ dialog::backdrop { background: rgba(0, 47, 97, .2); }
 .secours-boutons button { font-size: 13.5px; padding: 6px 14px; }
 .affichage #btn-gerer, .affichage .panneau, .affichage #annonce { display: none !important; }
 .affichage .site { cursor: default; }
+
+/* ---------- version téléphone (site public, écran étroit) ---------- */
+.mobile, .mobile body { height: auto; }
+.mobile .app { height: auto; padding: 20px 16px 32px; }
+.mobile .zone-carte { height: auto; display: block; }
+.mobile .cadre { border-radius: 16px; }
+.mobile #poster { width: 100% !important; height: auto !important; }
+.mobile .boutons-page, .mobile .titre-poster, .mobile .rose-echelle { display: none !important; }
+.m-titre { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 800; color: #24543a; }
+.m-titre span { background: linear-gradient(transparent 80%, var(--jaune) 80%); }
+.m-sous { margin: 6px 0 16px; color: #4f6a4a; font-size: 15px; }
+.m-compteur { background: #e3f1ee; border-radius: 16px; padding: 14px 16px; text-align: center; }
+.m-libelle { font-size: 13px; font-weight: 700; color: var(--vert); }
+.m-total { font-size: 18px; font-weight: 700; color: var(--vert); }
+.m-total b { font-size: 46px; font-weight: 800; letter-spacing: -.01em; }
+.m-nb { font-size: 14.5px; }
+.m-tuiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 16px; }
+.m-tuiles:empty { display: none; }
+.m-tuiles div { background: var(--blanc); border-radius: 12px; padding: 10px 6px; text-align: center; box-shadow: var(--ombre); }
+.m-tuiles b { display: block; font-size: 21px; font-weight: 800; color: var(--bleu); }
+.m-tuiles span { display: block; font-size: 11.5px; line-height: 1.3; color: var(--encre); }
+.m-aide { margin: 8px 2px 12px; font-size: 13px; color: var(--gris); }
+.m-play { width: 100%; padding: 12px; font-size: 15.5px; }
+.m-bas h2 { margin: 24px 0 8px; font-size: 18px; color: var(--bleu); }
+.m-bas h2 small { font-weight: 500; color: var(--gris); font-size: 14px; }
+.m-deps { background: var(--blanc); border-radius: 16px; padding: 4px 16px; box-shadow: var(--ombre); }
+.m-deps div { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid #e6edf5; }
+.m-deps div:last-child { border-bottom: 0; }
+.m-deps span:first-child { font-weight: 600; color: var(--bleu); }
+.m-deps span:nth-child(2) { font-size: 13.5px; color: var(--gris); }
+.m-deps b { color: var(--vert); }
+.m-liste { list-style: none; margin: 0; padding: 0; background: var(--blanc); border-radius: 16px; box-shadow: var(--ombre); overflow: hidden; }
+.m-liste li + li { border-top: 1px solid #e6edf5; }
+.m-liste button { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; background: none; color: inherit; padding: 11px 16px; font-weight: 400; }
+.m-liste button:hover { background: var(--bleu-pale); }
+.m-liste button b { display: block; color: var(--encre); font-size: 15px; }
+.m-liste button span { font-size: 13px; color: var(--gris); }
+.m-liste button.rebours b::before { content: '◆ '; color: var(--bleu); }
+.m-source { margin-top: 18px; font-size: 12.5px; color: var(--gris); }
 </style>
 </head>
 <body>
 <div class="app">
+  <!-- Version téléphone (site public) : chiffres au-dessus de la carte, départements et liste des sites en dessous -->
+  <section class="m-haut" id="m-haut" hidden>
+    <h1 class="m-titre">Nos sites <span>Biométhane</span></h1>
+    <p class="m-sous" id="m-sous"></p>
+    <div class="m-compteur">
+      <div class="m-libelle">Capacité de production injectée <span id="m-annee"></span></div>
+      <div class="m-total"><b id="m-total"></b> GWh/an</div>
+      <div class="m-nb" id="m-nb"></div>
+    </div>
+    <div class="m-tuiles" id="m-tuiles"></div>
+  </section>
   <main class="zone-carte">
     <div class="cadre"><svg id="poster" xmlns="http://www.w3.org/2000/svg"></svg></div>
     <div class="boutons-page">
@@ -295,6 +345,15 @@ dialog::backdrop { background: rgba(0, 47, 97, .2); }
     </div>
     <div id="infobulle" hidden></div>
   </main>
+  <section class="m-bas" id="m-bas" hidden>
+    <p class="m-aide">Touchez un site pour voir sa fiche. Zoomez avec deux doigts.</p>
+    <button type="button" class="principal m-play" id="m-play">▶ Voir l’histoire</button>
+    <h2>Par département</h2>
+    <div class="m-deps" id="m-deps"></div>
+    <h2>Les sites <small id="m-liste-nb"></small></h2>
+    <ul class="m-liste" id="m-liste"></ul>
+    <p class="m-source">Données : registre public ODRÉ (NaTran), mis à jour automatiquement.</p>
+  </section>
 
   <aside class="panneau">
     <header class="entete">
@@ -506,7 +565,7 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     poster.style.width = Math.floor((W + P) * k) + 'px';
     poster.style.height = Math.floor((H + B) * k) + 'px';
   }
-  window.addEventListener('resize', ajuster);
+  window.addEventListener('resize', () => { if (!document.body.classList.contains('mobile')) ajuster(); });
   ajuster();
 
   const defs = el('defs', {}, poster);
@@ -591,7 +650,7 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   }
 
   // Légende, rose des vents et échelle, en bas à gauche
-  const gLeg = el('g', { transform: `translate(0,${B})` }, poster);
+  const gLeg = el('g', { class: 'rose-echelle', transform: `translate(0,${B})` }, poster);
   function dessinerLegende() {
     // Sur la carte : seulement la rose des vents et l'échelle (la légende est dans la colonne de droite).
     gLeg.innerHTML = '';
@@ -681,7 +740,7 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   // Colonne de droite : titre, compteur (avec détail par département), légende, engagements, slogan.
   const gPan = el('g', { transform: `translate(${W},${B})`, 'data-dyn': '1' }, poster);
   const gFinal = el('g', { 'data-dyn': '1', 'data-final': '1' }, poster);  // chiffres d'aujourd'hui mis en valeur (sous le titre)
-  gTitre = el('g', {}, poster);
+  gTitre = el('g', { class: 'titre-poster' }, poster);
   const gRouleau = el('g', { class: 'seul-complet', transform: `translate(${W},${B})`, 'data-dyn': '1', 'data-roul': '1' }, poster);
   let rouleauTotal = null;
   const PICTOS = [
@@ -873,7 +932,8 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     if (toucher && !carte.contains(e.target)) bulle.hidden = true;
   });
   carte.addEventListener('click', e => { if (toucher) infobulle(e, true); });
-  window.addEventListener('scroll', () => { if (toucher) bulle.hidden = true; }, { passive: true });
+  let garderFiche = 0;  // pendant le défilement vers un site choisi dans la liste, la fiche reste ouverte
+  window.addEventListener('scroll', () => { if (toucher && Date.now() > garderFiche) bulle.hidden = true; }, { passive: true });
   // Au doigt, les symboles sont petits : on prend le site le plus proche du toucher (à 22 px près).
   function sitePres(e) {
     let mieux = null, dMin = 22;
@@ -1791,9 +1851,85 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   $('btn-export-imprimeur').addEventListener('click', () => { menuImpression(false); exporterImprimeur(); });
   $('btn-export-video').addEventListener('click', () => { menuImpression(false); exporterVideo(); });
 
+  // ---------------------------------------------------------------- version téléphone (site public)
+  // Sur un petit écran, le poster en miniature est illisible : les chiffres passent au-dessus en grand, la carte est
+  // recadrée sur le territoire (sans la colonne ni le titre du poster), puis viennent les départements et la liste des sites.
+  const ecranEtroit = matchMedia('(max-width: 760px)');
+  let mobile = false;
+  function basculerMobile() {
+    mobile = !!V.affichage && ecranEtroit.matches;
+    document.body.classList.toggle('mobile', mobile);
+    $('m-haut').hidden = $('m-bas').hidden = !mobile;
+    if (mobile) {
+      const b = carte.querySelector('.territoire').getBBox(), m = 3;
+      poster.setAttribute('viewBox', `${b.x - m} ${b.y + B - m} ${b.width + 2 * m} ${b.height + 2 * m}`);
+      poster.style.width = poster.style.height = '';
+      majMobile(true);
+    } else {
+      poster.setAttribute('viewBox', `0 0 ${W + P} ${H + B}`);
+      ajuster();
+    }
+  }
+  function majMobile(liste) {
+    if (!mobile) return;
+    const c = calculs();
+    $('m-sous').textContent = 'Des énergies renouvelables injectées ' + V.sousTitre;
+    $('m-total').textContent = fmt(c.total, 0).replace(/\s/g, ' ');  // espace fine absente de la police
+    $('m-annee').textContent = dateMax ? '· ' + dateMax.slice(0, 4) : '';
+    $('m-nb').textContent = `${c.nb} sites en injection · ${c.rebours} rebours`;
+    const tuiles = $('m-tuiles');
+    tuiles.innerHTML = '';
+    if (!dateMax) chiffresCles().forEach(([valeur, legende]) => {
+      const d = document.createElement('div'), b = document.createElement('b'), sp = document.createElement('span');
+      b.textContent = valeur; sp.textContent = legende; d.append(b, sp); tuiles.appendChild(d);
+    });
+    const deps = $('m-deps');
+    deps.innerHTML = '';
+    DEPS.forEach(([code, nom]) => {
+      const sites = donnees.sites.filter(s => s.type === 'injection' && s.etat === 'service' && avantDate(s) && (s.insee || '').startsWith(code));
+      const l = document.createElement('div'), n = document.createElement('span'), d = document.createElement('span'), v = document.createElement('b');
+      n.textContent = nom; d.textContent = `${sites.length} sites`;
+      v.textContent = fmt(sites.reduce((a, s) => a + (Number(s.capacite) || 0), 0), 0) + ' GWh/an';
+      l.append(n, d, v); deps.appendChild(l);
+    });
+    if (dateMax && !liste) return;  // pendant l'histoire, la liste ne bouge pas
+    // Liste : du plus récent au plus ancien ; toucher une ligne montre le site sur la carte.
+    const tous = donnees.sites.filter(s => s.etat === 'service').sort((a, b) => (a.type === 'rebours') - (b.type === 'rebours') || (b.date || '').localeCompare(a.date || ''));
+    $('m-liste-nb').textContent = `(${tous.length})`;
+    const ul = $('m-liste');
+    ul.innerHTML = '';
+    tous.forEach(s => {
+      const li = document.createElement('li'), bt = document.createElement('button'), nom = document.createElement('b'), det = document.createElement('span');
+      bt.type = 'button';
+      if (s.type === 'rebours') bt.classList.add('rebours');
+      nom.textContent = s.nom;
+      const commune = (parCode.get(s.insee) || {}).nom || s.commune;
+      det.textContent = [commune, s.type === 'rebours' ? 'rebours' : s.capacite ? fmt(s.capacite) + ' GWh/an' : '', s.date ? 'depuis ' + fmtMois(s.date) : ''].filter(Boolean).join(' · ');
+      bt.append(nom, det);
+      bt.addEventListener('click', () => montrerSite(s.id));
+      li.appendChild(bt); ul.appendChild(li);
+    });
+  }
+  function montrerSite(id) {
+    const g = [...gSites.querySelectorAll('.site')].find(x => x.dataset.id === id);
+    if (!g) return;
+    garderFiche = Date.now() + 1500;
+    cadre.scrollIntoView({ block: 'center' });  // immédiat : la fiche se place sur le site une fois la page arrêtée
+    setTimeout(() => {
+      const r = g.getBoundingClientRect();
+      toucher = true; garderFiche = Date.now() + 400;
+      infobulle({ target: g, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 }, true);
+    }, 150);
+  }
+  $('m-play').addEventListener('click', () => { cadre.scrollIntoView({ behavior: 'smooth', block: 'start' }); rejouerHistoire(); });
+  ecranEtroit.addEventListener('change', basculerMobile);
+  const panneauPoster = dessinerPanneau;
+  dessinerPanneau = function () { panneauPoster(); majMobile(false); };
+
   // ---------------------------------------------------------------- départ
   dessinerPanneau();
   dessinerTitre();
+  basculerMobile();
   $('filtre-perimetre').textContent = V.perimetre;
   document.title = V.titre;
   dessinerLegende();
