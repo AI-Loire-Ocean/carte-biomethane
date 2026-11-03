@@ -374,9 +374,9 @@ dialog::backdrop { background: rgba(0, 47, 97, .2); }
         <button type="button" id="btn-imprimer" aria-haspopup="menu" aria-expanded="false">Exporter ▾</button>
         <div class="menu" id="impression" role="menu" hidden>
           <button type="button" role="menuitem" id="btn-enregistrer"><b id="enr-titre">Enregistrer</b><span id="enr-detail"></span></button>
-          <button type="button" role="menuitem" id="btn-imprimer-fond"><b>Fond de carte</b><span>PDF 200 × 120 cm, sans les sites, compteur vide</span></button>
-          <button type="button" role="menuitem" id="btn-imprimer-complet"><b>Carte complète</b><span>PDF 200 × 120 cm, avec les sites et les chiffres</span></button>
-          <button type="button" role="menuitem" id="btn-export-imprimeur"><b>Fichier imprimeur</b><span>PDF 200 × 120 cm, fond de carte, sans marge</span></button>
+          <button type="button" role="menuitem" id="btn-imprimer-fond"><b>Fond de carte</b><span>image haute définition, sans les sites, compteur vide</span></button>
+          <button type="button" role="menuitem" id="btn-imprimer-complet"><b>Carte complète</b><span>image haute définition, avec les sites et les chiffres</span></button>
+          <button type="button" role="menuitem" id="btn-export-imprimeur"><b>Fichier imprimeur</b><span>PDF 200 × 120 cm vectoriel (Chrome ou Edge)</span></button>
           <button type="button" role="menuitem" id="btn-export-video"><b>Vidéo</b><span>MP4 : l’histoire puis les chiffres d’aujourd’hui</span></button>
           <button type="button" role="menuitem" id="btn-prevenir"><b>Mail à l’équipe</b><span>carte en PDF + mail prérempli</span></button>
         </div>
@@ -452,8 +452,8 @@ dialog::backdrop { background: rgba(0, 47, 97, .2); }
       <textarea id="prev-corps" rows="9"></textarea>
     </label>
     <ol class="etapes">
-      <li><button type="button" id="prev-pdf">1. Enregistrer la carte en PDF</button><small>Dans la fenêtre d’impression, choisissez « Enregistrer au format PDF ».</small></li>
-      <li><button type="button" class="principal" id="prev-mail">2. Ouvrir le mail</button><small>Le mail s’ouvre déjà rempli : glissez-y le PDF, puis envoyez.</small></li>
+      <li><button type="button" id="prev-pdf">1. Télécharger la carte (image)</button><small>Elle arrive dans vos Téléchargements.</small></li>
+      <li><button type="button" class="principal" id="prev-mail">2. Ouvrir le mail</button><small>Le mail s’ouvre déjà rempli : glissez-y l’image, puis envoyez.</small></li>
     </ol>
     <div class="secours-mail" id="prev-secours" hidden>
       <b>Le mail ne s’est pas ouvert ?</b> Ouvrez un nouveau mail dans Outlook, puis collez-y les destinataires et le message.
@@ -1202,8 +1202,8 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   $('btn-imprimer').addEventListener('click', e => { e.stopPropagation(); menuImpression($('impression').hidden); });
   document.addEventListener('click', e => { if (!e.target.closest('.menu-imprimer')) menuImpression(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') menuImpression(false); });
-  $('btn-imprimer-fond').addEventListener('click', () => { menuImpression(false); exporterPdf(true); });
-  $('btn-imprimer-complet').addEventListener('click', () => { menuImpression(false); exporterPdf(false); });
+  $('btn-imprimer-fond').addEventListener('click', () => { menuImpression(false); exporterImage(true); });
+  $('btn-imprimer-complet').addEventListener('click', () => { menuImpression(false); exporterImage(false); });
 
   // ---------------------------------------------------------------- synchronisation ODRÉ
   // À chaque ouverture, la page relit le registre public ODRÉ (sites d'injection + rebours) et met la carte à jour toute seule.
@@ -1448,7 +1448,7 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     const liste = adresses($('prev-dest').value);
     if (JSON.stringify(liste) !== JSON.stringify(donnees.destinataires || [])) { donnees.destinataires = liste; modifie(); }
   });
-  $('prev-pdf').addEventListener('click', () => { $('prevenir').close(); exporterPdf(false, () => $('prevenir').showModal()); });
+  $('prev-pdf').addEventListener('click', () => { $('prevenir').close(); exporterImage(false, () => $('prevenir').showModal()); });
   $('prev-mail').addEventListener('click', () => {
     const url = 'mailto:' + adresses($('prev-dest').value).join(',')
       + '?subject=' + encodeURIComponent($('prev-objet').value) + '&body=' + encodeURIComponent($('prev-corps').value);
@@ -1695,6 +1695,41 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     imprimer(fond, () => { st.remove(); hach.remove(); clip.remove(); voisins.forEach(v => { v.style.fill = ''; }); ombres.forEach(([e, f]) => e.setAttribute('filter', f)); if (apres) apres(); });
   }
   const exporterImprimeur = () => exporterPdf(true);
+
+  // Image du poster (carte complète ou fond) : PNG 5000 × 3000 px téléchargé directement, sans fenêtre d'impression
+  // (Safari ignore le format de page demandé pour un PDF). 5000 × 3000 reste sous la limite de taille des canevas de Safari.
+  async function exporterImage(fond, apres) {
+    arreterHistoire(); fermerTiroir(); menuImpression(false);
+    try {
+      if (document.fonts) await document.fonts.ready;
+      const LW = 5000, LH = 3000;
+      const c = poster.cloneNode(true);
+      if (fond) c.classList.add('mode-fond');
+      c.setAttribute('width', LW); c.setAttribute('height', LH); c.setAttribute('preserveAspectRatio', 'none');
+      c.setAttribute('viewBox', `0 0 ${W + P} ${H + B}`);
+      c.removeAttribute('style'); c.removeAttribute('id'); c.setAttribute('font-family', 'Inter, Arial, sans-serif');
+      const st = document.createElementNS(NS, 'style');
+      st.textContent = document.querySelector('style').textContent + '.qr-poster { display: inline !important; }';
+      c.insertBefore(st, c.firstChild);
+      const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)], { type: 'image/svg+xml' }));
+      const img = new Image(); img.width = LW; img.height = LH; img.src = url;
+      try { await img.decode(); } finally { URL.revokeObjectURL(url); }
+      const cv = document.createElement('canvas'); cv.width = LW; cv.height = LH;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, LW, LH);
+      g.drawImage(img, 0, 0, LW, LH);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+      const lien = document.createElement('a');
+      lien.href = URL.createObjectURL(blob);
+      lien.download = `${V.titre} - ${fond ? 'fond de carte' : 'carte complète'}.png`;
+      document.body.appendChild(lien); lien.click(); lien.remove();
+      setTimeout(() => URL.revokeObjectURL(lien.href), 5000);
+      toast('Image enregistrée dans vos Téléchargements (PNG 5000 × 3000 px).');
+    } catch (e) {
+      toast('L’image n’a pas pu être créée : ' + (e.message || e));
+    }
+    if (apres) apres();
+  }
 
   // Vidéo pour la télé (MP4 H.264, 30 images/s) : l'histoire mois par mois — les sites « poussent », le compteur et
   // l'année roulent chiffre par chiffre —, puis les chiffres d'aujourd'hui mis en valeur.
