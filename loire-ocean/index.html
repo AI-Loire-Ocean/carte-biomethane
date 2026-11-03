@@ -374,8 +374,8 @@ dialog::backdrop { background: rgba(0, 47, 97, .2); }
         <button type="button" id="btn-imprimer" aria-haspopup="menu" aria-expanded="false">Exporter ▾</button>
         <div class="menu" id="impression" role="menu" hidden>
           <button type="button" role="menuitem" id="btn-enregistrer"><b id="enr-titre">Enregistrer</b><span id="enr-detail"></span></button>
-          <button type="button" role="menuitem" id="btn-imprimer-fond"><b>Fond de carte</b><span>sans les sites, compteur vide (PDF ou impression)</span></button>
-          <button type="button" role="menuitem" id="btn-imprimer-complet"><b>Carte complète</b><span>avec les sites et les chiffres</span></button>
+          <button type="button" role="menuitem" id="btn-imprimer-fond"><b>Fond de carte</b><span>PDF 200 × 120 cm, sans les sites, compteur vide</span></button>
+          <button type="button" role="menuitem" id="btn-imprimer-complet"><b>Carte complète</b><span>PDF 200 × 120 cm, avec les sites et les chiffres</span></button>
           <button type="button" role="menuitem" id="btn-export-imprimeur"><b>Fichier imprimeur</b><span>PDF 200 × 120 cm, fond de carte, sans marge</span></button>
           <button type="button" role="menuitem" id="btn-export-video"><b>Vidéo</b><span>MP4 : l’histoire puis les chiffres d’aujourd’hui</span></button>
           <button type="button" role="menuitem" id="btn-prevenir"><b>Mail à l’équipe</b><span>carte en PDF + mail prérempli</span></button>
@@ -1202,8 +1202,8 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   $('btn-imprimer').addEventListener('click', e => { e.stopPropagation(); menuImpression($('impression').hidden); });
   document.addEventListener('click', e => { if (!e.target.closest('.menu-imprimer')) menuImpression(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') menuImpression(false); });
-  $('btn-imprimer-fond').addEventListener('click', () => { menuImpression(false); imprimer(true); });
-  $('btn-imprimer-complet').addEventListener('click', () => { menuImpression(false); imprimer(false); });
+  $('btn-imprimer-fond').addEventListener('click', () => { menuImpression(false); exporterPdf(true); });
+  $('btn-imprimer-complet').addEventListener('click', () => { menuImpression(false); exporterPdf(false); });
 
   // ---------------------------------------------------------------- synchronisation ODRÉ
   // À chaque ouverture, la page relit le registre public ODRÉ (sites d'injection + rebours) et met la carte à jour toute seule.
@@ -1448,7 +1448,7 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     const liste = adresses($('prev-dest').value);
     if (JSON.stringify(liste) !== JSON.stringify(donnees.destinataires || [])) { donnees.destinataires = liste; modifie(); }
   });
-  $('prev-pdf').addEventListener('click', () => { $('prevenir').close(); imprimer(false, () => $('prevenir').showModal()); });
+  $('prev-pdf').addEventListener('click', () => { $('prevenir').close(); exporterPdf(false, () => $('prevenir').showModal()); });
   $('prev-mail').addEventListener('click', () => {
     const url = 'mailto:' + adresses($('prev-dest').value).join(',')
       + '?subject=' + encodeURIComponent($('prev-objet').value) + '&body=' + encodeURIComponent($('prev-corps').value);
@@ -1672,9 +1672,11 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   }
 
   // Fichier pour l'imprimeur : fond de carte (sans les sites, compteur vide), page de 2000 × 1200 mm sans marge, en PDF vectoriel.
-  function exporterImprimeur() {
+  // PDF du poster (carte complète, fond de carte, fichier imprimeur) : une seule page aux dimensions exactes du tableau
+  // (200 × 120 cm, paysage), sans marge ni coins arrondis, 100 % vectoriel.
+  function exporterPdf(fond, apres) {
     const st = document.createElement('style');
-    st.textContent = '@media print { @page { size: 2000mm 1200mm; margin: 0 } .zone-carte { height: 100vh !important } #poster { width: 100vw !important; height: 100vh !important } }';
+    st.textContent = '@media print { @page { size: 2000mm 1200mm; margin: 0 } .zone-carte { height: 100vh !important } .cadre { border-radius: 0 !important } #poster { width: 100vw !important; height: 100vh !important } }';
     document.head.appendChild(st);
     // Hachures des départements voisins en vrais traits (un motif SVG serait converti en image dans le PDF).
     const voisins = [...carte.querySelectorAll('.voisin')];
@@ -1686,9 +1688,13 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
     el('path', { d }, hach);
     voisins[voisins.length - 1].after(hach);
     voisins.forEach(v => { v.style.fill = '#eef2e9'; });
-    toast('Choisissez « Enregistrer au format PDF », marges : aucune. Le PDF fait exactement 200 × 120 cm, 100 % vectoriel.');
-    imprimer(true, () => { st.remove(); hach.remove(); clip.remove(); voisins.forEach(v => { v.style.fill = ''; }); });
+    // Les ombres portées (filtres SVG) seraient converties en images : on les retire le temps de l'export.
+    const ombres = [...poster.querySelectorAll('[filter]')].map(e => [e, e.getAttribute('filter')]);
+    ombres.forEach(([e]) => e.removeAttribute('filter'));
+    toast('Dans la fenêtre qui s’ouvre, choisissez « Enregistrer au format PDF » : une page 200 × 120 cm, sans marge, 100 % vectorielle.');
+    imprimer(fond, () => { st.remove(); hach.remove(); clip.remove(); voisins.forEach(v => { v.style.fill = ''; }); ombres.forEach(([e, f]) => e.setAttribute('filter', f)); if (apres) apres(); });
   }
+  const exporterImprimeur = () => exporterPdf(true);
 
   // Vidéo pour la télé (MP4 H.264, 30 images/s) : l'histoire mois par mois — les sites « poussent », le compteur et
   // l'année roulent chiffre par chiffre —, puis les chiffres d'aujourd'hui mis en valeur.
