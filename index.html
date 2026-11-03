@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nos sites Biométhane</title>
+<style>
+  :root { --bleu: #0053A1; --vert: #00837B; --fond: #E4F0FF; --encre: #1C1C1C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--fond); color: var(--encre);
+         font-family: Inter, "Segoe UI", Arial, sans-serif; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  main { width: 100%; max-width: 560px; }
+  h1 { margin: 0 0 6px; font-size: 32px; font-weight: 800; color: #24543a; }
+  h1 span { background: linear-gradient(transparent 82%, #FFC72C 82%); }
+  p { margin: 0 0 24px; font-size: 16px; line-height: 1.5; }
+  a.carte { display: block; background: #fff; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px;
+            text-decoration: none; color: inherit; box-shadow: 0 2px 10px rgba(0, 47, 97, .08); }
+  a.carte:hover { box-shadow: 0 4px 16px rgba(0, 47, 97, .16); }
+  a.carte b { display: block; font-size: 18px; color: var(--bleu); }
+  a.carte small { font-size: 14px; color: #555; }
+  footer { margin-top: 20px; font-size: 12.5px; color: #555; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nos sites <span>Biométhane</span></h1>
+  <p>Les sites de biométhane injectés sur le réseau GRDF, mis à jour automatiquement avec le registre public ODRÉ.</p>
+  <a class="carte" href="loire-ocean/"><b>AI Loire Océan</b><small>Loire-Atlantique, Vendée et ouest du Maine-et-Loire</small></a>
+  <a class="carte" href="pays-de-la-loire/"><b>Pays de la Loire</b><small>Les 5 départements de la région</small></a>
+  <footer>Données : registre ODRÉ (NaTran), licence ouverte Etalab 2.0.</footer>
+</main>
+</body>
+</html>
