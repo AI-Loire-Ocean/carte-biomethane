@@ -863,13 +863,31 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
   }
 
   // ---------------------------------------------------------------- aperçu fixe (rendu final, sans zoom)
-  carte.addEventListener('pointermove', infobulle);
-  carte.addEventListener('pointerleave', () => { bulle.hidden = true; });
+  // Souris : la fiche suit le survol. Écran tactile (pas de survol) : la fiche s'ouvre au toucher, et se ferme
+  // en touchant ailleurs.
+  carte.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') infobulle(e); });
+  carte.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') bulle.hidden = true; });
+  let toucher = false;
+  document.addEventListener('pointerdown', e => {
+    toucher = e.pointerType !== 'mouse';
+    if (toucher && !carte.contains(e.target)) bulle.hidden = true;
+  });
+  carte.addEventListener('click', e => { if (toucher) infobulle(e, true); });
+  window.addEventListener('scroll', () => { if (toucher) bulle.hidden = true; }, { passive: true });
+  // Au doigt, les symboles sont petits : on prend le site le plus proche du toucher (à 22 px près).
+  function sitePres(e) {
+    let mieux = null, dMin = 22;
+    gSites.querySelectorAll('.site').forEach(g => {
+      const b = g.getBoundingClientRect(), d = Math.hypot(b.x + b.width / 2 - e.clientX, b.y + b.height / 2 - e.clientY);
+      if (d < dMin) { dMin = d; mieux = g; }
+    });
+    return mieux;
+  }
 
   const bulle = document.getElementById('infobulle');
   let survolCommune = null;
-  function infobulle(e) {
-    const gs = e.target.closest('.site');
+  function infobulle(e, auDoigt) {
+    const gs = e.target.closest('.site') || (auDoigt ? sitePres(e) : null);
     const pc = !gs && e.target.closest('.commune');
     if (survolCommune && survolCommune !== pc) survolCommune.classList.remove('survol');
     survolCommune = pc || null;
@@ -887,8 +905,13 @@ const SOURCE = '<!doctype html>\n' + document.documentElement.outerHTML;
       bulle.firstChild.textContent = libelleCommune(c);
     } else { bulle.hidden = true; return; }
     bulle.hidden = false;
-    bulle.style.left = (e.clientX + 14) + 'px';
-    bulle.style.top = (e.clientY + 14) + 'px';
+    // Toujours entièrement à l'écran (petit écran de téléphone) : à gauche ou au-dessus du doigt si besoin.
+    const l = bulle.offsetWidth, h = bulle.offsetHeight;
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + l > innerWidth - 8) x = Math.max(8, e.clientX - 14 - l);
+    if (y + h > innerHeight - 8) y = Math.max(8, e.clientY - 14 - h);
+    bulle.style.left = x + 'px';
+    bulle.style.top = y + 'px';
   }
   gSites.addEventListener('click', e => {
     const g = e.target.closest('.site'); if (!g) return;
